@@ -1,0 +1,209 @@
+:root {
+    --bg-dark: #121212;
+    --bg-card: #1a1a24;
+    --bg-header: #1e1e2e;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0b0;
+    --accent: #00b4d8;
+    --accent-hover: #0091a8;
+    --border: #2a2a3d;
+    --success: #51cf66;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+header {
+    text-align: center;
+    padding: 3rem 0;
+    background: linear-gradient(135deg, var(--bg-header) 0%, var(--bg-card) 100%);
+    border-radius: 12px;
+    margin-bottom: 3rem;
+    border: 2px solid var(--border);
+}
+
+h1 {
+    font-size: 3rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+}
+
+section {
+    background: var(--bg-card);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+h2 {
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.5rem;
+}
+
+h3 {
+    color: var(--text-primary);
+    margin: 1.5rem 0 1rem;
+    font-size: 1.5rem;
+}
+
+.intro p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+.endpoint-group {
+    margin-bottom: 2rem;
+}
+
+.endpoint {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-header);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.endpoint:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 180, 216, 0.2);
+}
+
+.method {
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.method.get {
+    background: var(--success);
+    color: #000;
+}
+
+.route {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+}
+
+.route a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.route a:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+.description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.example pre,
+.usage pre {
+    background: var(--bg-header);
+    padding: 1.5rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+}
+
+.example code,
+.usage code {
+    font-family: 'Courier New', monospace;
+    color: var(--success);
+    font-size: 0.95rem;
+}
+
+.usage p {
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+}
+
+.usage p code {
+    background: var(--bg-header);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    color: var(--accent);
+}
+
+footer {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+}
+
+footer p {
+    margin: 0.5rem 0;
+}
+
+footer a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+footer a:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .endpoint {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .method {
+        align-self: flex-start;
+    }
+
+    section {
+        padding: 1.5rem;
+    }
+}

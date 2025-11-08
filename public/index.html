@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameWorld API Documentation</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 GameWorld API</h1>
+            <p class="subtitle">RESTful API for GameWorld E-commerce Platform</p>
+        </header>
+
+        <section class="intro">
+            <h2>Welcome to GameWorld API</h2>
+            <p>This API provides access to our catalog of games, consoles, collectibles, and property listings. All responses are in JSON format.</p>
+        </section>
+
+        <section class="endpoints">
+            <h2>Available Endpoints</h2>
+
+            <div class="endpoint-group">
+                <h3>🎮 Games</h3>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="route">
+                        <a href="/api/games" target="_blank">/api/games</a>
+                    </div>
+                    <div class="description">Get all games</div>
+                </div>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="route">
+                        <a href="/api/games/mystic-realms" target="_blank">/api/games/:id</a>
+                    </div>
+                    <div class="description">Get a specific game by ID</div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h3>🕹️ Consoles</h3>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="route">
+                        <a href="/api/consoles" target="_blank">/api/consoles</a>
+                    </div>
+                    <div class="description">Get all consoles</div>
+                </div>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="route">
+                        <a href="/api/consoles/next-gen" target="_blank">/api/consoles/:id</a>
+                    </div>
+                    <div class="description">Get a specific console by ID</div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h3>⭐ Collectibles</h3>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="route">
+                        <a href="/api/collectibles" target="_blank">/api/collectibles</a>
+                    </div>
+                    <div class="description">Get all collectibles</div>
+                </div>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="route">
+                        <a href="/api/collectibles/limited-figure" target="_blank">/api/collectibles/:id</a>
+                    </div>
+                    <div class="description">Get a specific collectible by ID</div>
+                </div>
+            </div>
+
+            <div class="endpoint-group">
+                <h3>🏠 Houses (Example Data)</h3>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="route">
+                        <a href="/api/houses" target="_blank">/api/houses</a>
+                    </div>
+                    <div class="description">Get all houses</div>
+                </div>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="route">
+                        <a href="/api/houses/1" target="_blank">/api/houses/:id</a>
+                    </div>
+                    <div class="description">Get a specific house by ID</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="example">
+            <h2>Example Response</h2>
+            <pre><code>{
+  "id": "mystic-realms",
+  "name": "Mystic Realms",
+  "price": 49.99,
+  "genre": "RPG",
+  "platform": "PS5, Xbox, PC",
+  "rating": "E10+",
+  "image": "images/mystic-realms.png",
+  "description": "Step into the enchanted world..."
+}</code></pre>
+        </section>
+
+        <section class="usage">
+            <h2>Usage</h2>
+            <p><strong>Base URL:</strong> <code>https://your-render-url.onrender.com</code></p>
+            <p><strong>CORS:</strong> Enabled for all origins</p>
+            <p><strong>Rate Limiting:</strong> None currently implemented</p>
+            
+            <h3>Example Request</h3>
+            <pre><code>fetch('https://your-render-url.onrender.com/api/games')
+  .then(response => response.json())
+  .then(data => console.log(data));</code></pre>
+        </section>
+
+        <footer>
+            <p>&copy; 2025 GameWorld API | Built with Express.js</p>
+            <p>
+                <a href="https://github.com/yourusername/gameworld-server" target="_blank">📂 GitHub Repository</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
