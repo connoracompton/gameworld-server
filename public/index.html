@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameWorld API Documentation</title>
     <link rel="stylesheet" href="/style.css">
 </head>
@@ -10,12 +8,12 @@
     <div class="container">
         <header>
             <h1>🎮 GameWorld API</h1>
-            <p class="subtitle">RESTful API for GameWorld E-commerce Platform</p>
+            <p class="subtitle">API for GameWorld E-commerce Platform</p>
         </header>
 
         <section class="intro">
             <h2>Welcome to GameWorld API</h2>
-            <p>This API provides access to our catalog of games, consoles, collectibles, and property listings. All responses are in JSON format.</p>
+            <p>This API provides access to our catalog of games, consoles, and collectibles. All responses are in JSON format.</p>
         </section>
 
         <section class="endpoints">
@@ -74,24 +72,6 @@
                     <div class="description">Get a specific collectible by ID</div>
                 </div>
             </div>
-
-            <div class="endpoint-group">
-                <h3>🏠 Houses (Example Data)</h3>
-                <div class="endpoint">
-                    <div class="method get">GET</div>
-                    <div class="route">
-                        <a href="/api/houses" target="_blank">/api/houses</a>
-                    </div>
-                    <div class="description">Get all houses</div>
-                </div>
-                <div class="endpoint">
-                    <div class="method get">GET</div>
-                    <div class="route">
-                        <a href="/api/houses/1" target="_blank">/api/houses/:id</a>
-                    </div>
-                    <div class="description">Get a specific house by ID</div>
-                </div>
-            </div>
         </section>
 
         <section class="example">
@@ -110,20 +90,20 @@
 
         <section class="usage">
             <h2>Usage</h2>
-            <p><strong>Base URL:</strong> <code>https://your-render-url.onrender.com</code></p>
+            <p><strong>Base URL:</strong> <code>https://gameworld-server.onrender.com</code></p>
             <p><strong>CORS:</strong> Enabled for all origins</p>
             <p><strong>Rate Limiting:</strong> None currently implemented</p>
             
             <h3>Example Request</h3>
-            <pre><code>fetch('https://your-render-url.onrender.com/api/games')
+            <pre><code>fetch('https://gameworld-server.onrender.com/api/games')
   .then(response => response.json())
   .then(data => console.log(data));</code></pre>
         </section>
 
         <footer>
-            <p>&copy; 2025 GameWorld API | Built with Express.js</p>
+            <p>&copy; 2025 GameWorld API </p>
             <p>
-                <a href="https://github.com/yourusername/gameworld-server" target="_blank">📂 GitHub Repository</a>
+                <a href="https://github.com/connoracompton/gameworld-server" target="_blank">📂 GitHub Repository</a>
             </p>
         </footer>
     </div>
