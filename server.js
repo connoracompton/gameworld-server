@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const Joi = require('joi');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -9,6 +10,40 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
+
+// Joi Schemas
+const gameSchema = Joi.object({
+  id: Joi.string().required().lowercase().pattern(/^[a-z0-9-]+$/),
+  name: Joi.string().required().min(2).max(100),
+  price: Joi.number().required().min(0).max(999.99),
+  genre: Joi.string().required().min(2).max(50),
+  platform: Joi.string().required().min(2).max(100),
+  rating: Joi.string().required().valid('E', 'E10+', 'T', 'M', 'AO'),
+  image: Joi.string().uri().required(),
+  description: Joi.string().required().min(10).max(500)
+});
+
+const consoleSchema = Joi.object({
+  id: Joi.string().required().lowercase().pattern(/^[a-z0-9-]+$/),
+  name: Joi.string().required().min(2).max(100),
+  price: Joi.number().required().min(0).max(9999.99),
+  image: Joi.string().uri().required(),
+  description: Joi.string().required().min(10).max(500),
+  manufacturer: Joi.string().required().min(2).max(50),
+  release_year: Joi.number().integer().min(1970).max(new Date().getFullYear() + 2)
+});
+
+const collectibleSchema = Joi.object({
+  id: Joi.string().required().lowercase().pattern(/^[a-z0-9-]+$/),
+  name: Joi.string().required().min(2).max(100),
+  price: Joi.number().required().min(0).max(9999.99),
+  image: Joi.string().uri().required(),
+  description: Joi.string().required().min(10).max(500),
+  rarity: Joi.string().required().valid('Common', 'Uncommon', 'Rare', 'Limited Edition', 'Reproduction'),
+  height: Joi.string().optional().max(50),
+  size: Joi.string().optional().max(50),
+  condition: Joi.string().optional().max(50)
+});
 
 // Data arrays
 const games = [
@@ -143,20 +178,7 @@ const collectibles = [
   }
 ];
 
-// API Routes
-app.get('/api/houses', (req, res) => {
-  res.json(houses);
-});
-
-app.get('/api/houses/:id', (req, res) => {
-  const house = houses.find(h => h.id === parseInt(req.params.id));
-  if (house) {
-    res.json(house);
-  } else {
-    res.status(404).json({ error: 'House not found' });
-  }
-});
-
+// GET Routes
 app.get('/api/games', (req, res) => {
   res.json(games);
 });
@@ -194,6 +216,85 @@ app.get('/api/collectibles/:id', (req, res) => {
   } else {
     res.status(404).json({ error: 'Collectible not found' });
   }
+});
+
+// POST Routes
+app.post('/api/games', (req, res) => {
+  const { error, value } = gameSchema.validate(req.body);
+  
+  if (error) {
+    return res.status(400).json({ 
+      success: false, 
+      error: error.details[0].message 
+    });
+  }
+
+  // Check if ID already exists
+  if (games.find(g => g.id === value.id)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'A game with this ID already exists' 
+    });
+  }
+
+  games.push(value);
+  res.status(201).json({ 
+    success: true, 
+    message: 'Game added successfully',
+    data: value 
+  });
+});
+
+app.post('/api/consoles', (req, res) => {
+  const { error, value } = consoleSchema.validate(req.body);
+  
+  if (error) {
+    return res.status(400).json({ 
+      success: false, 
+      error: error.details[0].message 
+    });
+  }
+
+  // Check if ID already exists
+  if (consoles.find(c => c.id === value.id)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'A console with this ID already exists' 
+    });
+  }
+
+  consoles.push(value);
+  res.status(201).json({ 
+    success: true, 
+    message: 'Console added successfully',
+    data: value 
+  });
+});
+
+app.post('/api/collectibles', (req, res) => {
+  const { error, value } = collectibleSchema.validate(req.body);
+  
+  if (error) {
+    return res.status(400).json({ 
+      success: false, 
+      error: error.details[0].message 
+    });
+  }
+
+  // Check if ID already exists
+  if (collectibles.find(c => c.id === value.id)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'A collectible with this ID already exists' 
+    });
+  }
+
+  collectibles.push(value);
+  res.status(201).json({ 
+    success: true, 
+    message: 'Collectible added successfully',
+    data: value 
+  });
 });
 
 // Serve index.html with API documentation
