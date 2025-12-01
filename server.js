@@ -23,6 +23,16 @@ const gameSchema = Joi.object({
   description: Joi.string().required().min(10).max(500)
 });
 
+const gameUpdateSchema = Joi.object({
+  name: Joi.string().min(2).max(100).required(),
+  price: Joi.number().min(0).max(999.99).required(),
+  genre: Joi.string().min(2).max(50).required(),
+  platform: Joi.string().min(2).max(100).required(),
+  rating: Joi.string().valid('E', 'E10+', 'T', 'M', 'AO').required(),
+  image: Joi.string().uri().required(),
+  description: Joi.string().min(10).max(500).required()
+});
+
 const consoleSchema = Joi.object({
   id: Joi.string().required().lowercase().pattern(/^[a-z0-9-]+$/),
   name: Joi.string().required().min(2).max(100),
@@ -33,6 +43,15 @@ const consoleSchema = Joi.object({
   release_year: Joi.number().integer().min(1970).max(new Date().getFullYear() + 2)
 });
 
+const consoleUpdateSchema = Joi.object({
+  name: Joi.string().min(2).max(100).required(),
+  price: Joi.number().min(0).max(9999.99).required(),
+  image: Joi.string().uri().required(),
+  description: Joi.string().min(10).max(500).required(),
+  manufacturer: Joi.string().min(2).max(50).required(),
+  release_year: Joi.number().integer().min(1970).max(new Date().getFullYear() + 2).required()
+});
+
 const collectibleSchema = Joi.object({
   id: Joi.string().required().lowercase().pattern(/^[a-z0-9-]+$/),
   name: Joi.string().required().min(2).max(100),
@@ -40,6 +59,17 @@ const collectibleSchema = Joi.object({
   image: Joi.string().uri().required(),
   description: Joi.string().required().min(10).max(500),
   rarity: Joi.string().required().valid('Common', 'Uncommon', 'Rare', 'Limited Edition', 'Reproduction'),
+  height: Joi.string().optional().max(50),
+  size: Joi.string().optional().max(50),
+  condition: Joi.string().optional().max(50)
+});
+
+const collectibleUpdateSchema = Joi.object({
+  name: Joi.string().min(2).max(100).required(),
+  price: Joi.number().min(0).max(9999.99).required(),
+  image: Joi.string().uri().required(),
+  description: Joi.string().min(10).max(500).required(),
+  rarity: Joi.string().valid('Common', 'Uncommon', 'Rare', 'Limited Edition', 'Reproduction').required(),
   height: Joi.string().optional().max(50),
   size: Joi.string().optional().max(50),
   condition: Joi.string().optional().max(50)
@@ -178,11 +208,16 @@ const collectibles = [
   }
 ];
 
-// GET Routes
+// ============================================
+// GAMES ROUTES
+// ============================================
+
+// GET all games
 app.get('/api/games', (req, res) => {
   res.json(games);
 });
 
+// GET single game
 app.get('/api/games/:id', (req, res) => {
   const game = games.find(g => g.id === req.params.id);
   if (game) {
@@ -192,33 +227,7 @@ app.get('/api/games/:id', (req, res) => {
   }
 });
 
-app.get('/api/consoles', (req, res) => {
-  res.json(consoles);
-});
-
-app.get('/api/consoles/:id', (req, res) => {
-  const console = consoles.find(c => c.id === req.params.id);
-  if (console) {
-    res.json(console);
-  } else {
-    res.status(404).json({ error: 'Console not found' });
-  }
-});
-
-app.get('/api/collectibles', (req, res) => {
-  res.json(collectibles);
-});
-
-app.get('/api/collectibles/:id', (req, res) => {
-  const collectible = collectibles.find(c => c.id === req.params.id);
-  if (collectible) {
-    res.json(collectible);
-  } else {
-    res.status(404).json({ error: 'Collectible not found' });
-  }
-});
-
-// POST Routes
+// POST new game
 app.post('/api/games', (req, res) => {
   const { error, value } = gameSchema.validate(req.body);
   
@@ -229,7 +238,6 @@ app.post('/api/games', (req, res) => {
     });
   }
 
-  // Check if ID already exists
   if (games.find(g => g.id === value.id)) {
     return res.status(400).json({ 
       success: false, 
@@ -245,6 +253,78 @@ app.post('/api/games', (req, res) => {
   });
 });
 
+// PUT - Update a game
+app.put('/api/games/:id', (req, res) => {
+  const gameId = req.params.id;
+  
+  const { error, value } = gameUpdateSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ 
+      success: false,
+      error: error.details[0].message 
+    });
+  }
+  
+  const gameIndex = games.findIndex(g => g.id === gameId);
+  if (gameIndex === -1) {
+    return res.status(404).json({ 
+      success: false,
+      error: 'Game not found' 
+    });
+  }
+  
+  games[gameIndex] = {
+    id: gameId,
+    ...value
+  };
+  
+  res.json({ 
+    success: true, 
+    message: 'Game updated successfully',
+    data: games[gameIndex] 
+  });
+});
+
+// DELETE - Remove a game
+app.delete('/api/games/:id', (req, res) => {
+  const gameId = req.params.id;
+  
+  const gameIndex = games.findIndex(g => g.id === gameId);
+  if (gameIndex === -1) {
+    return res.status(404).json({ 
+      success: false,
+      error: 'Game not found' 
+    });
+  }
+  
+  const deletedGame = games.splice(gameIndex, 1)[0];
+  res.json({ 
+    success: true, 
+    message: 'Game deleted successfully',
+    data: deletedGame 
+  });
+});
+
+// ============================================
+// CONSOLES ROUTES
+// ============================================
+
+// GET all consoles
+app.get('/api/consoles', (req, res) => {
+  res.json(consoles);
+});
+
+// GET single console
+app.get('/api/consoles/:id', (req, res) => {
+  const console = consoles.find(c => c.id === req.params.id);
+  if (console) {
+    res.json(console);
+  } else {
+    res.status(404).json({ error: 'Console not found' });
+  }
+});
+
+// POST new console
 app.post('/api/consoles', (req, res) => {
   const { error, value } = consoleSchema.validate(req.body);
   
@@ -255,7 +335,6 @@ app.post('/api/consoles', (req, res) => {
     });
   }
 
-  // Check if ID already exists
   if (consoles.find(c => c.id === value.id)) {
     return res.status(400).json({ 
       success: false, 
@@ -271,6 +350,78 @@ app.post('/api/consoles', (req, res) => {
   });
 });
 
+// PUT - Update a console
+app.put('/api/consoles/:id', (req, res) => {
+  const consoleId = req.params.id;
+  
+  const { error, value } = consoleUpdateSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ 
+      success: false,
+      error: error.details[0].message 
+    });
+  }
+  
+  const consoleIndex = consoles.findIndex(c => c.id === consoleId);
+  if (consoleIndex === -1) {
+    return res.status(404).json({ 
+      success: false,
+      error: 'Console not found' 
+    });
+  }
+  
+  consoles[consoleIndex] = {
+    id: consoleId,
+    ...value
+  };
+  
+  res.json({ 
+    success: true, 
+    message: 'Console updated successfully',
+    data: consoles[consoleIndex] 
+  });
+});
+
+// DELETE - Remove a console
+app.delete('/api/consoles/:id', (req, res) => {
+  const consoleId = req.params.id;
+  
+  const consoleIndex = consoles.findIndex(c => c.id === consoleId);
+  if (consoleIndex === -1) {
+    return res.status(404).json({ 
+      success: false,
+      error: 'Console not found' 
+    });
+  }
+  
+  const deletedConsole = consoles.splice(consoleIndex, 1)[0];
+  res.json({ 
+    success: true, 
+    message: 'Console deleted successfully',
+    data: deletedConsole 
+  });
+});
+
+// ============================================
+// COLLECTIBLES ROUTES
+// ============================================
+
+// GET all collectibles
+app.get('/api/collectibles', (req, res) => {
+  res.json(collectibles);
+});
+
+// GET single collectible
+app.get('/api/collectibles/:id', (req, res) => {
+  const collectible = collectibles.find(c => c.id === req.params.id);
+  if (collectible) {
+    res.json(collectible);
+  } else {
+    res.status(404).json({ error: 'Collectible not found' });
+  }
+});
+
+// POST new collectible
 app.post('/api/collectibles', (req, res) => {
   const { error, value } = collectibleSchema.validate(req.body);
   
@@ -281,7 +432,6 @@ app.post('/api/collectibles', (req, res) => {
     });
   }
 
-  // Check if ID already exists
   if (collectibles.find(c => c.id === value.id)) {
     return res.status(400).json({ 
       success: false, 
@@ -297,6 +447,62 @@ app.post('/api/collectibles', (req, res) => {
   });
 });
 
+// PUT - Update a collectible
+app.put('/api/collectibles/:id', (req, res) => {
+  const collectibleId = req.params.id;
+  
+  const { error, value } = collectibleUpdateSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ 
+      success: false,
+      error: error.details[0].message 
+    });
+  }
+  
+  const collectibleIndex = collectibles.findIndex(c => c.id === collectibleId);
+  if (collectibleIndex === -1) {
+    return res.status(404).json({ 
+      success: false,
+      error: 'Collectible not found' 
+    });
+  }
+  
+  collectibles[collectibleIndex] = {
+    id: collectibleId,
+    ...value
+  };
+  
+  res.json({ 
+    success: true, 
+    message: 'Collectible updated successfully',
+    data: collectibles[collectibleIndex] 
+  });
+});
+
+// DELETE - Remove a collectible
+app.delete('/api/collectibles/:id', (req, res) => {
+  const collectibleId = req.params.id;
+  
+  const collectibleIndex = collectibles.findIndex(c => c.id === collectibleId);
+  if (collectibleIndex === -1) {
+    return res.status(404).json({ 
+      success: false,
+      error: 'Collectible not found' 
+    });
+  }
+  
+  const deletedCollectible = collectibles.splice(collectibleIndex, 1)[0];
+  res.json({ 
+    success: true, 
+    message: 'Collectible deleted successfully',
+    data: deletedCollectible 
+  });
+});
+
+// ============================================
+// DOCUMENTATION ROUTES
+// ============================================
+
 // Serve index.html with API documentation
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -307,6 +513,7 @@ app.get('/style.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'style.css'));
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
