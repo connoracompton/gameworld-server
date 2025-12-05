@@ -2,17 +2,210 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const Joi = require('joi');
+const mongoose = require('mongoose');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/gameworld';
+
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ Connected to MongoDB'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
+
+// Configure Multer for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/images/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
-// Joi Schemas
-const gameSchema = Joi.object({
+// ============================================
+// MONGOOSE SCHEMAS
+// ============================================
+
+const gameSchema = new mongoose.Schema({
+  id: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    lowercase: true,
+    match: /^[a-z0-9-]+$/
+  },
+  name: { 
+    type: String, 
+    required: true,
+    minlength: 2,
+    maxlength: 100
+  },
+  price: { 
+    type: Number, 
+    required: true,
+    min: 0,
+    max: 999.99
+  },
+  genre: { 
+    type: String, 
+    required: true,
+    minlength: 2,
+    maxlength: 50
+  },
+  platform: { 
+    type: String, 
+    required: true,
+    minlength: 2,
+    maxlength: 100
+  },
+  rating: { 
+    type: String, 
+    required: true,
+    enum: ['E', 'E10+', 'T', 'M', 'AO']
+  },
+  image: { 
+    type: String, 
+    required: true
+  },
+  description: { 
+    type: String, 
+    required: true,
+    minlength: 10,
+    maxlength: 500
+  }
+}, { timestamps: true });
+
+const consoleSchema = new mongoose.Schema({
+  id: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    lowercase: true,
+    match: /^[a-z0-9-]+$/
+  },
+  name: { 
+    type: String, 
+    required: true,
+    minlength: 2,
+    maxlength: 100
+  },
+  price: { 
+    type: Number, 
+    required: true,
+    min: 0,
+    max: 9999.99
+  },
+  image: { 
+    type: String, 
+    required: true
+  },
+  description: { 
+    type: String, 
+    required: true,
+    minlength: 10,
+    maxlength: 500
+  },
+  manufacturer: { 
+    type: String, 
+    required: true,
+    minlength: 2,
+    maxlength: 50
+  },
+  release_year: { 
+    type: Number, 
+    required: true,
+    min: 1970,
+    max: new Date().getFullYear() + 2
+  }
+}, { timestamps: true });
+
+const collectibleSchema = new mongoose.Schema({
+  id: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    lowercase: true,
+    match: /^[a-z0-9-]+$/
+  },
+  name: { 
+    type: String, 
+    required: true,
+    minlength: 2,
+    maxlength: 100
+  },
+  price: { 
+    type: Number, 
+    required: true,
+    min: 0,
+    max: 9999.99
+  },
+  image: { 
+    type: String, 
+    required: true
+  },
+  description: { 
+    type: String, 
+    required: true,
+    minlength: 10,
+    maxlength: 500
+  },
+  rarity: { 
+    type: String, 
+    required: true,
+    enum: ['Common', 'Uncommon', 'Rare', 'Limited Edition', 'Reproduction']
+  },
+  height: { 
+    type: String,
+    maxlength: 50
+  },
+  size: { 
+    type: String,
+    maxlength: 50
+  },
+  condition: { 
+    type: String,
+    maxlength: 50
+  }
+}, { timestamps: true });
+
+// Create Models
+const Game = mongoose.model('Game', gameSchema);
+const Console = mongoose.model('Console', consoleSchema);
+const Collectible = mongoose.model('Collectible', collectibleSchema);
+
+// ============================================
+// JOI VALIDATION SCHEMAS
+// ============================================
+
+const gameJoiSchema = Joi.object({
   id: Joi.string().required().lowercase().pattern(/^[a-z0-9-]+$/),
   name: Joi.string().required().min(2).max(100),
   price: Joi.number().required().min(0).max(999.99),
@@ -23,7 +216,7 @@ const gameSchema = Joi.object({
   description: Joi.string().required().min(10).max(500)
 });
 
-const gameUpdateSchema = Joi.object({
+const gameUpdateJoiSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
   price: Joi.number().min(0).max(999.99).required(),
   genre: Joi.string().min(2).max(50).required(),
@@ -33,7 +226,7 @@ const gameUpdateSchema = Joi.object({
   description: Joi.string().min(10).max(500).required()
 });
 
-const consoleSchema = Joi.object({
+const consoleJoiSchema = Joi.object({
   id: Joi.string().required().lowercase().pattern(/^[a-z0-9-]+$/),
   name: Joi.string().required().min(2).max(100),
   price: Joi.number().required().min(0).max(9999.99),
@@ -43,7 +236,7 @@ const consoleSchema = Joi.object({
   release_year: Joi.number().integer().min(1970).max(new Date().getFullYear() + 2)
 });
 
-const consoleUpdateSchema = Joi.object({
+const consoleUpdateJoiSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
   price: Joi.number().min(0).max(9999.99).required(),
   image: Joi.string().uri().required(),
@@ -52,184 +245,87 @@ const consoleUpdateSchema = Joi.object({
   release_year: Joi.number().integer().min(1970).max(new Date().getFullYear() + 2).required()
 });
 
-const collectibleSchema = Joi.object({
+const collectibleJoiSchema = Joi.object({
   id: Joi.string().required().lowercase().pattern(/^[a-z0-9-]+$/),
   name: Joi.string().required().min(2).max(100),
   price: Joi.number().required().min(0).max(9999.99),
   image: Joi.string().uri().required(),
   description: Joi.string().required().min(10).max(500),
   rarity: Joi.string().required().valid('Common', 'Uncommon', 'Rare', 'Limited Edition', 'Reproduction'),
-  height: Joi.string().optional().max(50),
-  size: Joi.string().optional().max(50),
-  condition: Joi.string().optional().max(50)
+  height: Joi.string().optional().max(50).allow(''),
+  size: Joi.string().optional().max(50).allow(''),
+  condition: Joi.string().optional().max(50).allow('')
 });
 
-const collectibleUpdateSchema = Joi.object({
+const collectibleUpdateJoiSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
   price: Joi.number().min(0).max(9999.99).required(),
   image: Joi.string().uri().required(),
   description: Joi.string().min(10).max(500).required(),
   rarity: Joi.string().valid('Common', 'Uncommon', 'Rare', 'Limited Edition', 'Reproduction').required(),
-  height: Joi.string().optional().max(50),
-  size: Joi.string().optional().max(50),
-  condition: Joi.string().optional().max(50)
+  height: Joi.string().optional().max(50).allow(''),
+  size: Joi.string().optional().max(50).allow(''),
+  condition: Joi.string().optional().max(50).allow('')
 });
 
-// Data arrays
-const games = [
-  {
-    id: 'mystic-realms',
-    name: 'Mystic Realms',
-    price: 49.99,
-    genre: 'RPG',
-    platform: 'PS5, Xbox, PC',
-    rating: 'E10+',
-    image: 'https://gameworld-server.onrender.com/images/mystic-realms.png',
-    description: 'Step into the enchanted world of Mystic Realms, where mystery and adventure collide. Explore vast kingdoms filled with mythical creatures, hidden treasures, and powerful spells waiting to be mastered.'
-  },
-  {
-    id: 'arcade-legends',
-    name: 'Arcade Legends',
-    price: 29.99,
-    genre: 'Arcade',
-    platform: 'Switch, PC',
-    rating: 'E',
-    image: 'https://gameworld-server.onrender.com/images/arcade-legends.png',
-    description: 'Relive the golden age of gaming with Arcade Legends, a collection of classic arcade games reimagined for modern platforms.'
-  },
-  {
-    id: 'steel-vanguard',
-    name: 'Steel Vanguard',
-    price: 59.99,
-    genre: 'Action',
-    platform: 'PS5, Xbox, PC',
-    rating: 'M',
-    image: 'https://gameworld-server.onrender.com/images/steel-vanguard.png',
-    description: 'Intense action-packed warfare in a dystopian future. Lead your squad to victory in this explosive shooter.'
-  },
-  {
-    id: 'lost-horizon',
-    name: 'Lost Horizon',
-    price: 49.99,
-    genre: 'Adventure',
-    platform: 'PS5, PC',
-    rating: 'T',
-    image: 'https://gameworld-server.onrender.com/images/lost-horizon.png',
-    description: 'Embark on an epic journey to discover ancient civilizations and uncover long-lost secrets.'
-  },
-  {
-    id: 'pixel-quest',
-    name: 'Pixel Quest',
-    price: 29.99,
-    genre: 'Platformer',
-    platform: 'All Platforms',
-    rating: 'E',
-    image: 'https://gameworld-server.onrender.com/images/pixel-quest.png',
-    description: 'Dive into the retro-inspired adventure of Pixel Quest, a fast-paced platformer bursting with charm and challenge.'
-  },
-  {
-    id: 'shadow-strike',
-    name: 'Shadow Strike',
-    price: 59.99,
-    genre: 'Stealth',
-    platform: 'PS5, Xbox, PC',
-    rating: 'M',
-    image: 'https://gameworld-server.onrender.com/images/shadow-strike.png',
-    description: 'Master the art of stealth in this gripping tactical espionage game. Every shadow is your ally.'
-  }
-];
+// ============================================
+// IMAGE UPLOAD ROUTE
+// ============================================
 
-const consoles = [
-  {
-    id: 'next-gen',
-    name: 'Next-Gen Console',
-    price: 499.99,
-    image: 'https://gameworld-server.onrender.com/images/next-gen.jpg',
-    description: 'Experience the future of gaming with the Next Gen Console, built for lightning-fast performance, stunning 4K visuals, and ultra-smooth gameplay.',
-    manufacturer: 'Sony',
-    release_year: 2024
-  },
-  {
-    id: 'wii',
-    name: 'Wii',
-    price: 199.99,
-    image: 'https://gameworld-server.onrender.com/images/wii.jpg',
-    description: 'Classic motion-controlled gaming console that revolutionized family entertainment.',
-    manufacturer: 'Nintendo',
-    release_year: 2006
-  },
-  {
-    id: 'switch',
-    name: 'Switch',
-    price: 299.99,
-    image: 'https://gameworld-server.onrender.com/images/switch.jpg',
-    description: 'Versatile hybrid console that seamlessly transitions between handheld and TV modes.',
-    manufacturer: 'Nintendo',
-    release_year: 2017
-  },
-  {
-    id: 'controller',
-    name: 'Wireless Controller',
-    price: 69.99,
-    image: 'https://gameworld-server.onrender.com/images/controller.jpg',
-    description: 'Premium wireless gaming controller with advanced haptic feedback and responsive controls.',
-    manufacturer: 'Various',
-    release_year: 2023
+app.post('/api/upload', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No file uploaded' 
+      });
+    }
+    
+    const imageUrl = `${req.protocol}://${req.get('host')}/images/${req.file.filename}`;
+    res.json({ 
+      success: true, 
+      imageUrl: imageUrl,
+      filename: req.file.filename
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
-];
-
-const collectibles = [
-  {
-    id: 'limited-figure',
-    name: 'Limited Edition Figure',
-    price: 89.99,
-    image: 'https://gameworld-server.onrender.com/images/limited-edition-figurine.png',
-    description: 'Own a piece of gaming history with the Limited Edition Figurine, crafted with premium detail and made exclusively for true collectors.',
-    rarity: 'Limited Edition',
-    height: '12 inches'
-  },
-  {
-    id: 'poster',
-    name: 'Vintage Gaming Poster',
-    price: 19.99,
-    image: 'https://gameworld-server.onrender.com/images/vintage-gaming-poster.png',
-    description: 'Bring the golden age of gaming to your walls with the Vintage Gaming Poster, a high-quality print that captures the bold colors and iconic style of classic arcades.',
-    size: '24x36 inches',
-    rarity: 'Reproduction'
-  },
-  {
-    id: 'rare-cartridge',
-    name: 'Rare Game Cartridge',
-    price: 149.99,
-    image: 'https://gameworld-server.onrender.com/images/rare-game-cartridge.png',
-    description: 'Authentic rare game cartridge from the golden era of gaming. A must-have for serious collectors.',
-    condition: 'Good',
-    rarity: 'Rare'
-  }
-];
+});
 
 // ============================================
 // GAMES ROUTES
 // ============================================
 
 // GET all games
-app.get('/api/games', (req, res) => {
-  res.json(games);
+app.get('/api/games', async (req, res) => {
+  try {
+    const games = await Game.find().sort({ createdAt: -1 });
+    res.json(games);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // GET single game
-app.get('/api/games/:id', (req, res) => {
-  const game = games.find(g => g.id === req.params.id);
-  if (game) {
-    res.json(game);
-  } else {
-    res.status(404).json({ error: 'Game not found' });
+app.get('/api/games/:id', async (req, res) => {
+  try {
+    const game = await Game.findOne({ id: req.params.id });
+    if (game) {
+      res.json(game);
+    } else {
+      res.status(404).json({ error: 'Game not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
 // POST new game
-app.post('/api/games', (req, res) => {
-  const { error, value } = gameSchema.validate(req.body);
+app.post('/api/games', async (req, res) => {
+  const { error, value } = gameJoiSchema.validate(req.body);
   
   if (error) {
     return res.status(400).json({ 
@@ -238,26 +334,35 @@ app.post('/api/games', (req, res) => {
     });
   }
 
-  if (games.find(g => g.id === value.id)) {
-    return res.status(400).json({ 
+  try {
+    const existingGame = await Game.findOne({ id: value.id });
+    if (existingGame) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'A game with this ID already exists' 
+      });
+    }
+
+    const newGame = new Game(value);
+    await newGame.save();
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Game added successfully',
+      data: newGame 
+    });
+  } catch (error) {
+    res.status(500).json({ 
       success: false, 
-      error: 'A game with this ID already exists' 
+      error: error.message 
     });
   }
-
-  games.push(value);
-  res.status(201).json({ 
-    success: true, 
-    message: 'Game added successfully',
-    data: value 
-  });
 });
 
 // PUT - Update a game
-app.put('/api/games/:id', (req, res) => {
-  const gameId = req.params.id;
+app.put('/api/games/:id', async (req, res) => {
+  const { error, value } = gameUpdateJoiSchema.validate(req.body);
   
-  const { error, value } = gameUpdateSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ 
       success: false,
@@ -265,44 +370,56 @@ app.put('/api/games/:id', (req, res) => {
     });
   }
   
-  const gameIndex = games.findIndex(g => g.id === gameId);
-  if (gameIndex === -1) {
-    return res.status(404).json({ 
-      success: false,
-      error: 'Game not found' 
+  try {
+    const updatedGame = await Game.findOneAndUpdate(
+      { id: req.params.id },
+      value,
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedGame) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Game not found' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Game updated successfully',
+      data: updatedGame 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
-  
-  games[gameIndex] = {
-    id: gameId,
-    ...value
-  };
-  
-  res.json({ 
-    success: true, 
-    message: 'Game updated successfully',
-    data: games[gameIndex] 
-  });
 });
 
 // DELETE - Remove a game
-app.delete('/api/games/:id', (req, res) => {
-  const gameId = req.params.id;
-  
-  const gameIndex = games.findIndex(g => g.id === gameId);
-  if (gameIndex === -1) {
-    return res.status(404).json({ 
-      success: false,
-      error: 'Game not found' 
+app.delete('/api/games/:id', async (req, res) => {
+  try {
+    const deletedGame = await Game.findOneAndDelete({ id: req.params.id });
+    
+    if (!deletedGame) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Game not found' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Game deleted successfully',
+      data: deletedGame 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
-  
-  const deletedGame = games.splice(gameIndex, 1)[0];
-  res.json({ 
-    success: true, 
-    message: 'Game deleted successfully',
-    data: deletedGame 
-  });
 });
 
 // ============================================
@@ -310,23 +427,32 @@ app.delete('/api/games/:id', (req, res) => {
 // ============================================
 
 // GET all consoles
-app.get('/api/consoles', (req, res) => {
-  res.json(consoles);
+app.get('/api/consoles', async (req, res) => {
+  try {
+    const consoles = await Console.find().sort({ createdAt: -1 });
+    res.json(consoles);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // GET single console
-app.get('/api/consoles/:id', (req, res) => {
-  const console = consoles.find(c => c.id === req.params.id);
-  if (console) {
-    res.json(console);
-  } else {
-    res.status(404).json({ error: 'Console not found' });
+app.get('/api/consoles/:id', async (req, res) => {
+  try {
+    const console = await Console.findOne({ id: req.params.id });
+    if (console) {
+      res.json(console);
+    } else {
+      res.status(404).json({ error: 'Console not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
 // POST new console
-app.post('/api/consoles', (req, res) => {
-  const { error, value } = consoleSchema.validate(req.body);
+app.post('/api/consoles', async (req, res) => {
+  const { error, value } = consoleJoiSchema.validate(req.body);
   
   if (error) {
     return res.status(400).json({ 
@@ -335,26 +461,35 @@ app.post('/api/consoles', (req, res) => {
     });
   }
 
-  if (consoles.find(c => c.id === value.id)) {
-    return res.status(400).json({ 
+  try {
+    const existingConsole = await Console.findOne({ id: value.id });
+    if (existingConsole) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'A console with this ID already exists' 
+      });
+    }
+
+    const newConsole = new Console(value);
+    await newConsole.save();
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Console added successfully',
+      data: newConsole 
+    });
+  } catch (error) {
+    res.status(500).json({ 
       success: false, 
-      error: 'A console with this ID already exists' 
+      error: error.message 
     });
   }
-
-  consoles.push(value);
-  res.status(201).json({ 
-    success: true, 
-    message: 'Console added successfully',
-    data: value 
-  });
 });
 
 // PUT - Update a console
-app.put('/api/consoles/:id', (req, res) => {
-  const consoleId = req.params.id;
+app.put('/api/consoles/:id', async (req, res) => {
+  const { error, value } = consoleUpdateJoiSchema.validate(req.body);
   
-  const { error, value } = consoleUpdateSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ 
       success: false,
@@ -362,44 +497,56 @@ app.put('/api/consoles/:id', (req, res) => {
     });
   }
   
-  const consoleIndex = consoles.findIndex(c => c.id === consoleId);
-  if (consoleIndex === -1) {
-    return res.status(404).json({ 
-      success: false,
-      error: 'Console not found' 
+  try {
+    const updatedConsole = await Console.findOneAndUpdate(
+      { id: req.params.id },
+      value,
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedConsole) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Console not found' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Console updated successfully',
+      data: updatedConsole 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
-  
-  consoles[consoleIndex] = {
-    id: consoleId,
-    ...value
-  };
-  
-  res.json({ 
-    success: true, 
-    message: 'Console updated successfully',
-    data: consoles[consoleIndex] 
-  });
 });
 
 // DELETE - Remove a console
-app.delete('/api/consoles/:id', (req, res) => {
-  const consoleId = req.params.id;
-  
-  const consoleIndex = consoles.findIndex(c => c.id === consoleId);
-  if (consoleIndex === -1) {
-    return res.status(404).json({ 
-      success: false,
-      error: 'Console not found' 
+app.delete('/api/consoles/:id', async (req, res) => {
+  try {
+    const deletedConsole = await Console.findOneAndDelete({ id: req.params.id });
+    
+    if (!deletedConsole) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Console not found' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Console deleted successfully',
+      data: deletedConsole 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
-  
-  const deletedConsole = consoles.splice(consoleIndex, 1)[0];
-  res.json({ 
-    success: true, 
-    message: 'Console deleted successfully',
-    data: deletedConsole 
-  });
 });
 
 // ============================================
@@ -407,23 +554,32 @@ app.delete('/api/consoles/:id', (req, res) => {
 // ============================================
 
 // GET all collectibles
-app.get('/api/collectibles', (req, res) => {
-  res.json(collectibles);
+app.get('/api/collectibles', async (req, res) => {
+  try {
+    const collectibles = await Collectible.find().sort({ createdAt: -1 });
+    res.json(collectibles);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // GET single collectible
-app.get('/api/collectibles/:id', (req, res) => {
-  const collectible = collectibles.find(c => c.id === req.params.id);
-  if (collectible) {
-    res.json(collectible);
-  } else {
-    res.status(404).json({ error: 'Collectible not found' });
+app.get('/api/collectibles/:id', async (req, res) => {
+  try {
+    const collectible = await Collectible.findOne({ id: req.params.id });
+    if (collectible) {
+      res.json(collectible);
+    } else {
+      res.status(404).json({ error: 'Collectible not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
 // POST new collectible
-app.post('/api/collectibles', (req, res) => {
-  const { error, value } = collectibleSchema.validate(req.body);
+app.post('/api/collectibles', async (req, res) => {
+  const { error, value } = collectibleJoiSchema.validate(req.body);
   
   if (error) {
     return res.status(400).json({ 
@@ -432,26 +588,35 @@ app.post('/api/collectibles', (req, res) => {
     });
   }
 
-  if (collectibles.find(c => c.id === value.id)) {
-    return res.status(400).json({ 
+  try {
+    const existingCollectible = await Collectible.findOne({ id: value.id });
+    if (existingCollectible) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'A collectible with this ID already exists' 
+      });
+    }
+
+    const newCollectible = new Collectible(value);
+    await newCollectible.save();
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Collectible added successfully',
+      data: newCollectible 
+    });
+  } catch (error) {
+    res.status(500).json({ 
       success: false, 
-      error: 'A collectible with this ID already exists' 
+      error: error.message 
     });
   }
-
-  collectibles.push(value);
-  res.status(201).json({ 
-    success: true, 
-    message: 'Collectible added successfully',
-    data: value 
-  });
 });
 
 // PUT - Update a collectible
-app.put('/api/collectibles/:id', (req, res) => {
-  const collectibleId = req.params.id;
+app.put('/api/collectibles/:id', async (req, res) => {
+  const { error, value } = collectibleUpdateJoiSchema.validate(req.body);
   
-  const { error, value } = collectibleUpdateSchema.validate(req.body);
   if (error) {
     return res.status(400).json({ 
       success: false,
@@ -459,61 +624,146 @@ app.put('/api/collectibles/:id', (req, res) => {
     });
   }
   
-  const collectibleIndex = collectibles.findIndex(c => c.id === collectibleId);
-  if (collectibleIndex === -1) {
-    return res.status(404).json({ 
-      success: false,
-      error: 'Collectible not found' 
+  try {
+    const updatedCollectible = await Collectible.findOneAndUpdate(
+      { id: req.params.id },
+      value,
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedCollectible) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Collectible not found' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Collectible updated successfully',
+      data: updatedCollectible 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
-  
-  collectibles[collectibleIndex] = {
-    id: collectibleId,
-    ...value
-  };
-  
-  res.json({ 
-    success: true, 
-    message: 'Collectible updated successfully',
-    data: collectibles[collectibleIndex] 
-  });
 });
 
 // DELETE - Remove a collectible
-app.delete('/api/collectibles/:id', (req, res) => {
-  const collectibleId = req.params.id;
-  
-  const collectibleIndex = collectibles.findIndex(c => c.id === collectibleId);
-  if (collectibleIndex === -1) {
-    return res.status(404).json({ 
-      success: false,
-      error: 'Collectible not found' 
+app.delete('/api/collectibles/:id', async (req, res) => {
+  try {
+    const deletedCollectible = await Collectible.findOneAndDelete({ id: req.params.id });
+    
+    if (!deletedCollectible) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Collectible not found' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Collectible deleted successfully',
+      data: deletedCollectible 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
-  
-  const deletedCollectible = collectibles.splice(collectibleIndex, 1)[0];
-  res.json({ 
-    success: true, 
-    message: 'Collectible deleted successfully',
-    data: deletedCollectible 
-  });
+});
+
+// ============================================
+// SEED DATABASE (Development only)
+// ============================================
+
+app.post('/api/seed', async (req, res) => {
+  try {
+    // Clear existing data
+    await Game.deleteMany({});
+    await Console.deleteMany({});
+    await Collectible.deleteMany({});
+
+    // Seed games
+    const games = [
+      {
+        id: 'mystic-realms',
+        name: 'Mystic Realms',
+        price: 49.99,
+        genre: 'RPG',
+        platform: 'PS5, Xbox, PC',
+        rating: 'E10+',
+        image: 'https://gameworld-server.onrender.com/images/mystic-realms.png',
+        description: 'Step into the enchanted world of Mystic Realms, where mystery and adventure collide.'
+      },
+      {
+        id: 'arcade-legends',
+        name: 'Arcade Legends',
+        price: 29.99,
+        genre: 'Arcade',
+        platform: 'Switch, PC',
+        rating: 'E',
+        image: 'https://gameworld-server.onrender.com/images/arcade-legends.png',
+        description: 'Relive the golden age of gaming with Arcade Legends.'
+      }
+    ];
+
+    const consoles = [
+      {
+        id: 'next-gen',
+        name: 'Next-Gen Console',
+        price: 499.99,
+        image: 'https://gameworld-server.onrender.com/images/next-gen.jpg',
+        description: 'Experience the future of gaming with the Next Gen Console.',
+        manufacturer: 'Sony',
+        release_year: 2024
+      }
+    ];
+
+    const collectibles = [
+      {
+        id: 'limited-figure',
+        name: 'Limited Edition Figure',
+        price: 89.99,
+        image: 'https://gameworld-server.onrender.com/images/limited-edition-figurine.png',
+        description: 'Own a piece of gaming history.',
+        rarity: 'Limited Edition',
+        height: '12 inches'
+      }
+    ];
+
+    await Game.insertMany(games);
+    await Console.insertMany(consoles);
+    await Collectible.insertMany(collectibles);
+
+    res.json({ 
+      success: true, 
+      message: 'Database seeded successfully' 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
 });
 
 // ============================================
 // DOCUMENTATION ROUTES
 // ============================================
 
-// Serve index.html with API documentation
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Serve CSS for the API documentation page
 app.get('/style.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'style.css'));
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
